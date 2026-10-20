@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LearningScenarioBuilder.Analysis;
 using LearningScenarioBuilder.Logging;
 using LearningScenarioBuilder.Steps;
 using UnityEngine;
@@ -32,6 +33,10 @@ namespace LearningScenarioBuilder.Modes
         [Tooltip("Логгер, в который режим пишет журнал прохождения.")]
         private ScenarioLogger _logger;
 
+        [SerializeField]
+        [Tooltip("Анализатор, которым по умолчанию оценивается журнал этого режима.")]
+        private ScenarioAnalyzer _analyzer;
+
         private float _startTime;
         private int _groupIndex;
         private int _stageIndex;
@@ -39,6 +44,7 @@ namespace LearningScenarioBuilder.Modes
 
         public string DisplayName => string.IsNullOrWhiteSpace(_displayName) ? name : _displayName;
         public ScenarioLogger Logger => _logger;
+        public ScenarioAnalyzer Analyzer => _analyzer;
         public string CurrentGroupTitle => _isRunning ? CurrentGroup.Title : string.Empty;
 
         protected int CurrentGroupViolationCount { get; private set; }
@@ -50,6 +56,11 @@ namespace LearningScenarioBuilder.Modes
             if (_logger == null)
             {
                 LogConfigurationWarning("не назначен логгер");
+            }
+
+            if (_analyzer == null)
+            {
+                LogConfigurationWarning("не назначен анализатор");
             }
 
             HashSet<ScenarioStep> seenSteps = new HashSet<ScenarioStep>();
