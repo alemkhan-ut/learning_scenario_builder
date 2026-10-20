@@ -53,6 +53,12 @@ namespace LearningScenarioBuilder.Modes
 
         private void OnValidate()
         {
+            // Prefab-ассет режима не знает объектов сцены — проверяется только экземпляр в сцене.
+            if (!gameObject.scene.IsValid())
+            {
+                return;
+            }
+
             if (_logger == null)
             {
                 LogConfigurationWarning("не назначен логгер");
