@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LearningScenarioBuilder.Steps;
 using UnityEngine;
@@ -10,12 +11,12 @@ namespace LearningScenarioBuilder.Modes
     public class TrainingMode : ScenarioMode
     {
         [SerializeField]
-        [Tooltip("Общая группа всех шагов: стадии открываются по очереди, шаги стадии — одновременно.")]
-        private StepGroup _group = new StepGroup();
+        [Tooltip("Конфиг с раскладкой шагов тренировки.")]
+        private TrainingModeConfig _config;
 
         protected override IReadOnlyList<StepGroup> GetGroups()
         {
-            return new StepGroup[] { _group };
+            return _config != null ? new StepGroup[] { _config.Group } : Array.Empty<StepGroup>();
         }
 
         protected override void ApplyViolation(ScenarioStep step)

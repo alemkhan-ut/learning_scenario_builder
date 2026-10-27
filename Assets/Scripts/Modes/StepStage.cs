@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using LearningScenarioBuilder.Steps;
 using UnityEngine;
 
 namespace LearningScenarioBuilder.Modes
@@ -12,9 +11,9 @@ namespace LearningScenarioBuilder.Modes
     public class StepStage
     {
         [SerializeField]
-        [Tooltip("Шаги, активные одновременно. Следующая стадия откроется, когда завершатся все.")]
-        private List<ScenarioStep> _steps = new List<ScenarioStep>();
+        [Tooltip("Id шагов (поле Id компонента Scenario Step), активных одновременно. Следующая стадия откроется, когда завершатся все.")]
+        private List<string> _stepIds = new List<string>();
 
-        public IReadOnlyList<ScenarioStep> Steps => _steps;
+        public IReadOnlyList<string> StepIds => _stepIds;
     }
 }

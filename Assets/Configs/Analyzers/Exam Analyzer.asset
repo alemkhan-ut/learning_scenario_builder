@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e2db60464e177d408683a1ea326a5a9, type: 3}
   m_Name: Exam Analyzer
   m_EditorClassIdentifier: Assembly-CSharp::LearningScenarioBuilder.Analysis.ExamAnalyzer
-  _displayName: "\u042D\u043A\u0437\u0430\u043C\u0435\u043D: \u0448\u0442\u0440\u0430\u0444\u044B"
+  _displayName: "\u0428\u0442\u0440\u0430\u0444\u044B"
   _baseScore: 100
   _failedPenalty: 10
   _skippedPenalty: 5

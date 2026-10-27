@@ -81,13 +81,21 @@ namespace LearningScenarioBuilder.UI
 
             foreach (ScenarioLogEntry entry in _entries)
             {
-                if (entry != null)
+                if (entry != null && !IsServiceEntry(entry))
                 {
                     builder.AppendLine(entry.GetDisplayText());
                 }
             }
 
             return builder.ToString();
+        }
+
+        /// <summary>
+        /// Служебные записи нужны анализатору, но не показываются пользователю.
+        /// </summary>
+        private static bool IsServiceEntry(ScenarioLogEntry entry)
+        {
+            return entry.Type == ScenarioLogEntryTypes.STEP_REGISTERED || entry.Type == ScenarioLogEntryTypes.STEP_ACTIVATED;
         }
 
         private void ShowReport(ScenarioAnalyzer analyzer)

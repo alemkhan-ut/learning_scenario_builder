@@ -30,6 +30,10 @@ namespace LearningScenarioBuilder.Modes
         private OutOfTurnPolicy _outOfTurnPolicy = OutOfTurnPolicy.RegisterViolation;
 
         [SerializeField]
+        [Tooltip("Реестр шагов сцены: по нему находятся шаги по id из конфига режима.")]
+        private ScenarioStepRegistry _stepRegistry;
+
+        [SerializeField]
         [Tooltip("Логгер, в который режим пишет журнал прохождения.")]
         private ScenarioLogger _logger;
 
@@ -59,6 +63,11 @@ namespace LearningScenarioBuilder.Modes
                 return;
             }
 
+            if (_stepRegistry == null)
+            {
+                LogConfigurationWarning("не назначен реестр шагов");
+            }
+
             if (_logger == null)
             {
                 LogConfigurationWarning("не назначен логгер");
@@ -69,7 +78,12 @@ namespace LearningScenarioBuilder.Modes
                 LogConfigurationWarning("не назначен анализатор");
             }
 
-            HashSet<ScenarioStep> seenSteps = new HashSet<ScenarioStep>();
+            if (GetGroups().Count == 0)
+            {
+                LogConfigurationWarning("не назначен конфиг или в нём нет групп");
+            }
+
+            HashSet<string> seenStepIds = new HashSet<string>();
 
             foreach (StepGroup group in GetGroups())
             {
@@ -80,7 +94,7 @@ namespace LearningScenarioBuilder.Modes
 
                 foreach (StepStage stage in group.Stages)
                 {
-                    ValidateStage(group, stage, seenSteps);
+                    ValidateStage(group, stage, seenStepIds);
                 }
             }
         }
@@ -101,7 +115,7 @@ namespace LearningScenarioBuilder.Modes
 
             foreach (ScenarioStep step in GetCurrentStageSteps())
             {
-                if (step != null && GetStatus(step) == StepStatus.Active)
+                if (GetStatus(step) == StepStatus.Active)
                 {
                     activeSteps.Add(step);
                 }
@@ -135,14 +149,14 @@ namespace LearningScenarioBuilder.Modes
         {
             _statuses[step] = status;
             step.Deactivate();
-            WriteEntry(ScenarioLogEntryTypes.STEP_FINISHED, step.Id, status.ToString());
+            WriteEntry(ScenarioLogEntryTypes.STEP_FINISHED, step.Id, status.ToString(), step.Title);
         }
 
         protected void SkipCurrentGroup()
         {
             foreach (StepStage stage in CurrentGroup.Stages)
             {
-                foreach (ScenarioStep step in stage.Steps)
+                foreach (ScenarioStep step in GetStageSteps(stage))
                 {
                     if (IsUnfinished(step))
                     {
@@ -171,9 +185,9 @@ namespace LearningScenarioBuilder.Modes
             {
                 foreach (StepStage stage in group.Stages)
                 {
-                    foreach (ScenarioStep step in stage.Steps)
+                    foreach (ScenarioStep step in GetStageSteps(stage))
                     {
-                        if (step == null || _statuses.ContainsKey(step))
+                        if (_statuses.ContainsKey(step))
                         {
                             continue;
                         }
@@ -228,12 +242,21 @@ namespace LearningScenarioBuilder.Modes
 
         private void ActivateCurrentStage()
         {
-            foreach (ScenarioStep step in GetCurrentStageSteps())
+            List<ScenarioStep> stageSteps = GetCurrentStageSteps();
+
+            if (stageSteps.Count == 0)
             {
-                if (step != null && GetStatus(step) == StepStatus.Pending)
+                return;
+            }
+
+            HashSet<StepEventSource> foreignSources = GetForeignSources(stageSteps);
+
+            foreach (ScenarioStep step in stageSteps)
+            {
+                if (GetStatus(step) == StepStatus.Pending)
                 {
                     _statuses[step] = StepStatus.Active;
-                    step.Activate();
+                    step.Activate(foreignSources);
                     WriteEntry(ScenarioLogEntryTypes.STEP_ACTIVATED, step.Id);
                 }
             }
@@ -273,10 +296,48 @@ namespace LearningScenarioBuilder.Modes
             }
         }
 
-        private IReadOnlyList<ScenarioStep> GetCurrentStageSteps()
+        private List<ScenarioStep> GetCurrentStageSteps()
         {
             IReadOnlyList<StepStage> stages = CurrentGroup.Stages;
-            return _stageIndex < stages.Count ? stages[_stageIndex].Steps : Array.Empty<ScenarioStep>();
+            return _stageIndex < stages.Count ? GetStageSteps(stages[_stageIndex]) : new List<ScenarioStep>();
+        }
+
+        /// <summary>
+        /// Шаги стадии по id из конфига; id, которых нет в реестре, пропускаются (предупреждение — в OnValidate).
+        /// </summary>
+        private List<ScenarioStep> GetStageSteps(StepStage stage)
+        {
+            List<ScenarioStep> steps = new List<ScenarioStep>();
+
+            if (_stepRegistry == null)
+            {
+                return steps;
+            }
+
+            foreach (string stepId in stage.StepIds)
+            {
+                if (_stepRegistry.TryGetStep(stepId, out ScenarioStep step))
+                {
+                    steps.Add(step);
+                }
+            }
+
+            return steps;
+        }
+
+        /// <summary>
+        /// Действия сценария, не выполняющие ни один шаг стадии: шаги одной стадии не мешают друг другу.
+        /// </summary>
+        private HashSet<StepEventSource> GetForeignSources(List<ScenarioStep> stageSteps)
+        {
+            HashSet<StepEventSource> sources = _stepRegistry.GetActionSources();
+
+            foreach (ScenarioStep step in stageSteps)
+            {
+                sources.ExceptWith(step.SuccessSequence);
+            }
+
+            return sources;
         }
 
         private bool IsCurrentStageFinished()
@@ -294,11 +355,6 @@ namespace LearningScenarioBuilder.Modes
 
         private bool IsUnfinished(ScenarioStep step)
         {
-            if (step == null)
-            {
-                return false;
-            }
-
             StepStatus status = GetStatus(step);
             return status == StepStatus.Pending || status == StepStatus.Active;
         }
@@ -316,29 +372,29 @@ namespace LearningScenarioBuilder.Modes
             }
         }
 
-        private void ValidateStage(StepGroup group, StepStage stage, HashSet<ScenarioStep> seenSteps)
+        private void ValidateStage(StepGroup group, StepStage stage, HashSet<string> seenStepIds)
         {
-            if (stage.Steps.Count == 0)
+            if (stage.StepIds.Count == 0)
             {
                 LogConfigurationWarning($"в группе «{group.Title}» есть пустая стадия");
             }
 
-            foreach (ScenarioStep step in stage.Steps)
+            foreach (string stepId in stage.StepIds)
             {
-                if (step == null)
+                if (string.IsNullOrWhiteSpace(stepId))
                 {
-                    LogConfigurationWarning($"в группе «{group.Title}» есть пустая ссылка на шаг");
+                    LogConfigurationWarning($"в группе «{group.Title}» есть пустой id шага");
                     continue;
                 }
 
-                if (string.IsNullOrWhiteSpace(step.Id))
+                if (_stepRegistry != null && !_stepRegistry.TryGetStep(stepId, out ScenarioStep _))
                 {
-                    LogConfigurationWarning($"у шага «{step.name}» не задан id");
+                    LogConfigurationWarning($"шаг «{stepId}» из группы «{group.Title}» не найден в реестре шагов");
                 }
 
-                if (!seenSteps.Add(step))
+                if (!seenStepIds.Add(stepId))
                 {
-                    LogConfigurationWarning($"шаг «{step.name}» встречается в режиме дважды");
+                    LogConfigurationWarning($"шаг «{stepId}» встречается в режиме дважды");
                 }
             }
         }

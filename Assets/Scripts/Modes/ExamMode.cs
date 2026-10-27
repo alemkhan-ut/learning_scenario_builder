@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using LearningScenarioBuilder.Steps;
 using UnityEngine;
@@ -10,8 +11,8 @@ namespace LearningScenarioBuilder.Modes
     public class ExamMode : ScenarioMode
     {
         [SerializeField]
-        [Tooltip("Группы экзамена по порядку. Внутри группы — стадии, открываемые последовательно.")]
-        private List<StepGroup> _groups = new List<StepGroup>();
+        [Tooltip("Конфиг с группами экзамена.")]
+        private ExamModeConfig _config;
 
         [SerializeField]
         [Min(1)]
@@ -20,7 +21,7 @@ namespace LearningScenarioBuilder.Modes
 
         protected override IReadOnlyList<StepGroup> GetGroups()
         {
-            return _groups;
+            return _config != null ? _config.Groups : Array.Empty<StepGroup>();
         }
 
         protected override void ApplyViolation(ScenarioStep step)

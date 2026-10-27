@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db457c68bf8d69e4ca00b312226f903f, type: 3}
+  m_Name: Training Mode Config
+  m_EditorClassIdentifier: Assembly-CSharp::LearningScenarioBuilder.Modes.TrainingModeConfig
+  _group:
+    _title: "\u0412\u0441\u0435 \u0448\u0430\u0433\u0438"
+    _stages:
+    - _stepIds:
+      - step_01
+      - step_02
+      - step_03
+      - step_04
+    - _stepIds:
+      - step_05
+    - _stepIds:
+      - step_06
+    - _stepIds:
+      - step_07
+    - _stepIds:
+      - step_08
+    - _stepIds:
+      - step_09
+      - step_10
+    - _stepIds:
+      - step_11
+      - step_12

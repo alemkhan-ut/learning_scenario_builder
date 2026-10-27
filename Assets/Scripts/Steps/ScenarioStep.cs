@@ -17,6 +17,7 @@ namespace LearningScenarioBuilder.Steps
         private const string OUT_OF_TURN_MESSAGE = "Действие вне очереди";
 
         private readonly HashSet<StepEventSource> _subscribedSources = new HashSet<StepEventSource>();
+        private readonly HashSet<StepEventSource> _foreignSources = new HashSet<StepEventSource>();
 
         [SerializeField]
         [Tooltip("Уникальный идентификатор шага в журнале, например step_01.")]
@@ -31,7 +32,7 @@ namespace LearningScenarioBuilder.Steps
         private StepEventSource[] _successSequence = Array.Empty<StepEventSource>();
 
         [SerializeField]
-        [Tooltip("Действия, которые считаются ошибкой, пока шаг активен.")]
+        [Tooltip("Действия, которые считаются ошибкой, пока шаг активен. Если пусто — ошибка любое действие сценария, кроме действий шагов текущей стадии.")]
         private StepEventSource[] _violationSources = Array.Empty<StepEventSource>();
 
         [SerializeField]
@@ -51,6 +52,8 @@ namespace LearningScenarioBuilder.Steps
 
         public string Id => _id;
         public string Title => _title;
+        public IReadOnlyList<StepEventSource> SuccessSequence => _successSequence;
+        public IReadOnlyList<StepEventSource> ViolationSources => _violationSources;
 
         private void OnEnable()
         {
@@ -66,18 +69,39 @@ namespace LearningScenarioBuilder.Steps
             }
 
             _subscribedSources.Clear();
+            _foreignSources.Clear();
         }
 
-        public void Activate()
+        /// <summary>
+        /// Активирует шаг. <paramref name="foreignSources"/> — действия сценария, не относящиеся к текущей стадии:
+        /// при пустом списке нарушений шаг считает ошибкой любое из них.
+        /// </summary>
+        public void Activate(IEnumerable<StepEventSource> foreignSources)
         {
             _isActive = true;
             _progress = 0;
+
+            if (_violationSources.Length == 0)
+            {
+                _foreignSources.UnionWith(foreignSources);
+                _foreignSources.ExceptWith(_subscribedSources);
+                _foreignSources.Remove(null);
+                SubscribeSources(_foreignSources);
+            }
         }
 
         public void Deactivate()
         {
             _isActive = false;
             _progress = 0;
+
+            foreach (StepEventSource source in _foreignSources)
+            {
+                source.RaisedEvent -= SourceRaisedEventHandler;
+                _subscribedSources.Remove(source);
+            }
+
+            _foreignSources.Clear();
         }
 
         /// <summary>
@@ -102,7 +126,7 @@ namespace LearningScenarioBuilder.Steps
                 return true;
             }
 
-            if (Array.IndexOf(_violationSources, source) >= 0)
+            if (Array.IndexOf(_violationSources, source) >= 0 || _foreignSources.Contains(source))
             {
                 result = StepActionResult.Violated;
                 reason = string.Format(WRONG_ACTION_MESSAGE, source.DisplayName);
@@ -126,7 +150,7 @@ namespace LearningScenarioBuilder.Steps
             return _requiredStateObject == null || _requiredStateObject.activeSelf == _requiredActiveState;
         }
 
-        private void SubscribeSources(StepEventSource[] sources)
+        private void SubscribeSources(IEnumerable<StepEventSource> sources)
         {
             foreach (StepEventSource source in sources)
             {

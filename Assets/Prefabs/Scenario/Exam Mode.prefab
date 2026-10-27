@@ -46,7 +46,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LearningScenarioBuilder.Modes.ExamMode
   _displayName: "\u042D\u043A\u0437\u0430\u043C\u0435\u043D"
   _outOfTurnPolicy: 0
+  _stepRegistry: {fileID: 0}
   _logger: {fileID: 0}
   _analyzer: {fileID: 11400000, guid: 137ba494eacb83546842fa03827779d1, type: 2}
-  _groups: []
+  _config: {fileID: 11400000, guid: efc77796f4e80974291044a9dae32b8d, type: 2}
   _violationThreshold: 2

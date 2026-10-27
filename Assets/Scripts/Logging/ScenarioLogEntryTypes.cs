@@ -19,7 +19,7 @@ namespace LearningScenarioBuilder.Logging
         /// <summary>Message — причина нарушения.</summary>
         public const string STEP_VIOLATION = "StepViolation";
 
-        /// <summary>Result — Completed, Failed или Skipped.</summary>
+        /// <summary>Result — Completed, Failed или Skipped; Message — текст задания.</summary>
         public const string STEP_FINISHED = "StepFinished";
 
         public const string SCENARIO_FINISHED = "ScenarioFinished";
